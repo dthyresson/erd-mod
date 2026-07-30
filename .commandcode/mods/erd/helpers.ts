@@ -7,11 +7,15 @@ export function parseFlags(args: string): {flags: Record<string, string>; positi
   const positional: string[] = [];
   const tokens = args.match(/(?:--[^\s=]+(?:=[^\s]*)?|[^\s]+)/g) || [];
 
-  for (const token of tokens) {
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     if (token.startsWith('--')) {
       const eqIdx = token.indexOf('=');
       if (eqIdx >= 0) {
         flags[token.slice(2, eqIdx)] = token.slice(eqIdx + 1);
+      } else if (i + 1 < tokens.length && !tokens[i + 1].startsWith('--')) {
+        flags[token.slice(2)] = tokens[i + 1];
+        i++;
       } else {
         flags[token.slice(2)] = 'true';
       }

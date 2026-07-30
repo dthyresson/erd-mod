@@ -43,6 +43,16 @@ function generateMermaid(schema: ParsedSchema): string {
 function generateDbml(schema: ParsedSchema): string {
   const lines: string[] = [];
 
+  // Collect tables with inline FK columns for dedup
+  const inlineFkColumns = new Set<string>();
+  for (const table of schema.tables) {
+    for (const col of table.columns) {
+      if (col.references) {
+        inlineFkColumns.add(`${table.name}.${col.name}`);
+      }
+    }
+  }
+
   for (const table of schema.tables) {
     lines.push(`Table ${table.name} {`);
     for (const col of table.columns) {
@@ -64,18 +74,26 @@ function generateDbml(schema: ParsedSchema): string {
   const drawn = new Set<string>();
   for (const fk of schema.foreignKeys) {
     for (let i = 0; i < fk.columns.length; i++) {
+      const colKey = `${fk.table}.${fk.columns[i]}`;
+      // Skip if already covered by an inline column ref
+      if (inlineFkColumns.has(colKey)) continue;
+
       const key = `${fk.table}.${fk.columns[i]}>${fk.refTable}.${fk.refColumns[i] || fk.refColumns[0]}`;
       if (drawn.has(key)) continue;
       drawn.add(key);
 
       let ref = `Ref: ${fk.table}.${fk.columns[i]} > ${fk.refTable}.${fk.refColumns[i] || fk.refColumns[0]}`;
-      if (fk.onDelete) ref += ` [delete: ${fk.onDelete.toLowerCase().replace(/_/g, ' ')}]`;
-      if (fk.onUpdate) ref += ` [update: ${fk.onUpdate.toLowerCase().replace(/_/g, ' ')}]`;
+      if (fk.onDelete) ref += ` [delete: ${formatDbDelete(fk.onDelete)}]`;
+      if (fk.onUpdate) ref += ` [update: ${formatDbDelete(fk.onUpdate)}]`;
       lines.push(ref);
     }
   }
 
   return lines.join('\n');
+}
+
+function formatDbDelete(action: string): string {
+  return action.toLowerCase().replace(/_/g, ' ');
 }
 
 function generateAscii(schema: ParsedSchema): string {

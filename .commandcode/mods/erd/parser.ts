@@ -203,10 +203,10 @@ function parseCreateTable(sql: string, dialect: Dialect): {table: Table; fks: Fo
         refColumns: refCols,
       };
 
-      const onDeleteMatch = rest.match(/\bON\s+DELETE\s+(\S+)/i);
+      const onDeleteMatch = rest.match(/\bON\s+DELETE\s+(SET\s+NULL|SET\s+DEFAULT|NO\s+ACTION|CASCADE|RESTRICT)/i);
       if (onDeleteMatch) fk.onDelete = onDeleteMatch[1];
 
-      const onUpdateMatch = rest.match(/\bON\s+UPDATE\s+(\S+)/i);
+      const onUpdateMatch = rest.match(/\bON\s+UPDATE\s+(SET\s+NULL|SET\s+DEFAULT|NO\s+ACTION|CASCADE|RESTRICT)/i);
       if (onUpdateMatch) fk.onUpdate = onUpdateMatch[1];
 
       fks.push(fk);

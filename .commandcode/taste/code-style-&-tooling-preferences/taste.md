@@ -10,3 +10,4 @@
 - Prefers markdown rendering support in command output surfaces (mod feed). Explicitly stated desire for proper markdown support in the mod UI, not just ANSI/terminal formatting. Confidence: 0.7
 - Prefers generated/derived output files to be excluded from version control via `.gitignore`. Keeps generated artifacts local but out of the repository. Confidence: 0.7
 - Prefers comprehensive `.gitignore` files following GitHub community-standard templates (macOS/OSX system files, Node.js artifacts, IDE config, environment files) rather than minimal pattern-only files. Explicitly requested "github standard default for osx etc." Confidence: 0.7
+- Prefers CLI flags to accept both `--flag=value` and `--flag value` (space-separated) syntax, not just `=` form. Expects the common convention of space-separated flags to work. Confidence: 0.7

@@ -1,0 +1,44 @@
+Table users {
+  id INTEGER [pk, increment, not null]
+  email VARCHAR(255) [not null, unique]
+  name VARCHAR(100) [not null]
+  password_hash VARCHAR(255) [not null]
+  role VARCHAR(20) [default: `'user'`]
+  created_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+  updated_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
+
+Table projects {
+  id INTEGER [pk, increment, not null]
+  owner_id INTEGER [not null, ref: > users.id]
+  name VARCHAR(200) [not null]
+  description TEXT
+  status VARCHAR(20) [default: `'active'`]
+  created_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+  updated_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
+
+Table tasks {
+  id INTEGER [pk, increment, not null]
+  project_id INTEGER [not null]
+  assigned_to INTEGER
+  title VARCHAR(300) [not null]
+  priority VARCHAR(10) [default: `'medium'`]
+  status VARCHAR(20) [default: `'todo'`]
+  due_date DATE
+  created_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+  updated_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
+
+Table comments {
+  id INTEGER [pk, increment, not null]
+  task_id INTEGER [not null]
+  author_id INTEGER [not null]
+  body TEXT [not null]
+  created_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
+}
+
+Ref: tasks.project_id > projects.id [delete: cascade]
+Ref: tasks.assigned_to > users.id [delete: set null]
+Ref: comments.task_id > tasks.id [delete: cascade]
+Ref: comments.author_id > users.id [delete: cascade]

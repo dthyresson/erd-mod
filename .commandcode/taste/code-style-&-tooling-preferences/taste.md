@@ -1,0 +1,12 @@
+# Code Style & Tooling Preferences
+- Prefers commands to have aliases for alternate naming conventions (e.g., `/erd-describe` as alias for `/erd-about`). Values discoverability through multiple command names. Confidence: 0.7
+- Prefers output/summaries to include database type/dialect metadata (e.g., sqlite, postgres, mysql) for context. Confidence: 0.8
+- Prefers markdown tables as the display format for structured schema/column attribute data (columns, types, nullability, keys, defaults, etc.). Explicitly stated as ideal format, reiterated preference for proper markdown support in mod UI. Confidence: 0.95
+- Prefers compact individual-line formatting over ANSI box-drawing/grid tables in terminal feed output. Finds box-drawing tables visually poor ("does not look great") and prone to truncation. Confidence: 0.8
+- Prefers project-level `.commandcode/settings.json` for per-project configuration (e.g., taste learning). Confidence: 0.8
+- Prefers generated output (especially ERDs) to be automatically copied to the clipboard so the user can immediately paste and use the result elsewhere. Values convenience and reducing friction between tools. Confidence: 0.8
+- Prefers `.md` file extension for markdown-based generated files (e.g., Mermaid ERDs) rather than format-specific extensions like `.mmd`. Values consistency with conventional markdown file naming. Confidence: 0.8
+- Prefers generated artifacts (like ERDs) to be persisted to disk in a dedicated output directory with ISO timestamps for uniqueness, rather than being ephemeral command output only. Values having a retrievable artifact trail. Confidence: 0.8
+- Prefers markdown rendering support in command output surfaces (mod feed). Explicitly stated desire for proper markdown support in the mod UI, not just ANSI/terminal formatting. Confidence: 0.7
+- Prefers generated/derived output files to be excluded from version control via `.gitignore`. Keeps generated artifacts local but out of the repository. Confidence: 0.7
+- Prefers comprehensive `.gitignore` files following GitHub community-standard templates (macOS/OSX system files, Node.js artifacts, IDE config, environment files) rather than minimal pattern-only files. Explicitly requested "github standard default for osx etc." Confidence: 0.7

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(.commandcode/mods/**)",
+      "Shell(node -e \"try { require('/Users/dthyresson/projects/dthyresson/erd-mod/.commandcode/mods/erd.ts'); console.log('OK'); } catch(e) { console.log(e.message); }\" 2>&1)"
+    ]
+  }
+}

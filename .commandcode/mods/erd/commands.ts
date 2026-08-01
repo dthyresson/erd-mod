@@ -2,13 +2,7 @@ import type {ModApi} from '@commandcode/harness';
 import type {Dialect, Format} from './types.ts';
 import {GENERATORS, FORMAT_LABELS} from './generators.ts';
 import {parseFlags, resolveSchemaPath, loadAndParse} from './helpers.ts';
-import {
-  listTables,
-  listIndexes,
-  listForeignKeys,
-  findColumn,
-  schemaSummary,
-} from './queries.ts';
+import {listTables} from './queries.ts';
 
 export function registerCommands(cmd: ModApi): void {
   // ── /erd-generate ──────────────────────────────────────────────────────────────
@@ -68,14 +62,16 @@ ERDEOF`]});
       if (saved) statusParts.push(`saved to \`${outFile}\``);
       statusParts.push('copied to clipboard');
 
-      return {
-        message: [
-          `📋 **${FORMAT_LABELS[format]}** — ${result.schema.tables.length} tables · ${result.schema.indexes.length} indexes · ${result.schema.foreignKeys.length} FKs`,
-          `Dialect: **${result.dialect}** (${statusParts.join(', ')})`,
-          '',
-          erd,
-        ].join('\n'),
-      };
+      cmd.showEntry('erd-diagram', {
+        format,
+        dialect: result.dialect,
+        tables: result.schema.tables.length,
+        indexes: result.schema.indexes.length,
+        foreignKeys: result.schema.foreignKeys.length,
+        content: erd,
+      });
+
+      return {message: statusParts.join(', ')};
     },
   });
 
@@ -111,7 +107,10 @@ ERDEOF`]});
       const result = await loadAndParse(filePath, cwd, dialect, exec);
       if ('error' in result) return {message: result.error};
 
-      return {message: listIndexes(result.schema)};
+      cmd.showEntry('erd-indexes', {
+        dialect: result.dialect,
+        indexes: result.schema.indexes,
+      });
     },
   });
 
@@ -129,7 +128,10 @@ ERDEOF`]});
       const result = await loadAndParse(filePath, cwd, dialect, exec);
       if ('error' in result) return {message: result.error};
 
-      return {message: listForeignKeys(result.schema)};
+      cmd.showEntry('erd-fk-map', {
+        dialect: result.dialect,
+        foreignKeys: result.schema.foreignKeys,
+      });
     },
   });
 
@@ -200,7 +202,42 @@ ERDEOF`]});
       const result = await loadAndParse(filePath, cwd, dialect, exec);
       if ('error' in result) return {message: result.error};
 
-      return {message: findColumn(result.schema, query)};
+      const q = query.toLowerCase();
+      const matches: {
+        tableName: string;
+        columnName: string;
+        type: string;
+        nullable: boolean;
+        primaryKey: boolean;
+        unique: boolean;
+        autoIncrement: boolean;
+        defaultValue?: string;
+        references?: {table: string; column: string};
+      }[] = [];
+
+      for (const table of result.schema.tables) {
+        for (const col of table.columns) {
+          if (col.name.toLowerCase().includes(q)) {
+            matches.push({
+              tableName: table.name,
+              columnName: col.name,
+              type: col.type,
+              nullable: col.nullable,
+              primaryKey: col.primaryKey,
+              unique: col.unique,
+              autoIncrement: col.autoIncrement,
+              defaultValue: col.defaultValue,
+              references: col.references,
+            });
+          }
+        }
+      }
+
+      cmd.showEntry('erd-columns', {
+        dialect: result.dialect,
+        query,
+        columns: matches,
+      });
     },
   });
 
@@ -218,7 +255,28 @@ ERDEOF`]});
       const result = await loadAndParse(filePath, cwd, dialect, exec);
       if ('error' in result) return {message: result.error};
 
-      return {message: schemaSummary(result.schema, result.dialect)};
+      const totalColumns = result.schema.tables.reduce(
+        (sum, t) => sum + t.columns.length,
+        0,
+      );
+      const primaryKeys = result.schema.tables.reduce(
+        (sum, t) => sum + t.columns.filter(c => c.primaryKey).length,
+        0,
+      );
+      const foreignKeyColumns = result.schema.tables.reduce(
+        (sum, t) => sum + t.columns.filter(c => c.references).length,
+        0,
+      );
+
+      cmd.showEntry('erd-summary', {
+        dialect: result.dialect,
+        tables: result.schema.tables.length,
+        indexes: result.schema.indexes.length,
+        foreignKeys: result.schema.foreignKeys.length,
+        totalColumns,
+        primaryKeys,
+        foreignKeyColumns,
+      });
     },
   });
 
@@ -236,7 +294,28 @@ ERDEOF`]});
       const result = await loadAndParse(filePath, cwd, dialect, exec);
       if ('error' in result) return {message: result.error};
 
-      return {message: schemaSummary(result.schema, result.dialect)};
+      const totalColumns = result.schema.tables.reduce(
+        (sum, t) => sum + t.columns.length,
+        0,
+      );
+      const primaryKeys = result.schema.tables.reduce(
+        (sum, t) => sum + t.columns.filter(c => c.primaryKey).length,
+        0,
+      );
+      const foreignKeyColumns = result.schema.tables.reduce(
+        (sum, t) => sum + t.columns.filter(c => c.references).length,
+        0,
+      );
+
+      cmd.showEntry('erd-summary', {
+        dialect: result.dialect,
+        tables: result.schema.tables.length,
+        indexes: result.schema.indexes.length,
+        foreignKeys: result.schema.foreignKeys.length,
+        totalColumns,
+        primaryKeys,
+        foreignKeyColumns,
+      });
     },
   });
 }

@@ -15,7 +15,8 @@ A Command Code mod that parses SQL schema files and generates Entity-Relationshi
     ├── helpers.ts                  # Flag parsing, schema path resolution, schema file loading
     ├── commands.ts                 # All slash command registrations
     ├── tools.ts                    # All model-callable tool registrations
-    └── renderer.ts                 # Custom feed renderer for /erd-table output
+    ├── renderer.ts                 # Custom feed renderers for command output
+    └── ansi.ts                     # Picocolors-style ANSI color/style helpers (zero-dep)
 ```
 
 ## Supported SQL Dialects
@@ -142,6 +143,138 @@ The model can call these tools directly:
 - **`erd_query`** — takes `query` (`tables`|`indexes`|`foreign_keys`|`find_column`|`summary`|`table`), optional `file`, `column_name`, `table_name`, `dialect`
 
 Example prompt: *"Show me the posts table"* or *"Generate a Mermaid ERD from schema/schema.sql"*
+
+## Custom Feed Renderers
+
+Command output renders through custom feed entries (registered with `cmd.addRenderer`, pushed with `cmd.showEntry`). Each command emits a typed entry:
+
+| Renderer | Entry type | Used by | Shows |
+|---|---|---|---|
+| Diagram | `erd-diagram` | `/erd-generate` | Colored ERD header + raw diagram content |
+| Summary | `erd-summary` | `/erd-about`, `/erd-describe` | Schema stats with aligned key/value rows |
+| FK map | `erd-fk-map` | `/erd-fk` | Visual FK graph grouped by referenced table |
+| Indexes | `erd-indexes` | `/erd-indexes` | Colored index list with UNIQUE badges |
+| Columns | `erd-columns` | `/erd-find` | Matching columns with PK/FK/UQ badges |
+| Table | `erd-table` | `/erd-table` | Full table detail (columns, indexes, FKs) |
+
+An unregistered custom type would pretty-print as JSON; renderers are line-based and styled with ANSI escapes. Headless (`-p`) runs drop feed entries.
+
+### UI Showcase
+
+Every command outputs through its custom renderer. Sample output against `schema/schema.sql` (colors render in the TUI; shown here as plain text):
+
+**`/erd-generate`** — diagram with header, plus save/clipboard status:
+
+```
+MERMAID · 4 tables · 6 indexes · 5 FKs · sqlite
+
+erDiagram
+    users {
+        INTEGER id PK
+    }
+```
+
+> Saved to `erd/erd-...md`, copied to clipboard — status returned as a message row.
+
+**`/erd-tables`** — markdown list (unchanged, `{message}` output):
+
+```
+**Tables (4):**
+- **users** — 7 columns (PK: id)
+- **projects** — 4 columns (PK: id)
+- **tasks** — 6 columns (PK: id)
+- **comments** — 5 columns (PK: id)
+```
+
+**`/erd-table users`** — full detail with badges:
+
+```
+users · 7 columns · sqlite
+
+  id             INTEGER  NOT NULL  PK AUTO
+  email          VARCHAR(255)  NOT NULL  UQ
+  name           VARCHAR(100)  NOT NULL
+  password_hash  VARCHAR(255)  NOT NULL
+  role           VARCHAR(20)  NULL   = 'user'
+  created_at     TIMESTAMP  NULL   = CURRENT_TIMESTAMP
+  updated_at     TIMESTAMP  NULL   = CURRENT_TIMESTAMP
+
+Indexes:
+  idx_users_email (INDEX) on (email)
+
+Referenced by:
+  tasks(assigned_to) → (id)
+  comments(author_id) → (id)
+  projects(owner_id) → (id)
+```
+
+**`/erd-indexes`** — colored index list:
+
+```
+Indexes sqlite
+
+  idx_users_email on users(email) INDEX
+  idx_projects_owner on projects(owner_id) INDEX
+  idx_tasks_project on tasks(project_id) INDEX
+  idx_tasks_assigned on tasks(assigned_to) INDEX
+  idx_tasks_status on tasks(status) INDEX
+  idx_comments_task on comments(task_id) INDEX
+```
+
+**`/erd-fk`** — FK graph grouped by referenced table:
+
+```
+Foreign Key Map sqlite
+
+  projects ← 1 reference
+    tasks(project_id) → projects(id) [ON DELETE CASCADE]
+  users ← 3 references
+    tasks(assigned_to) → users(id) [ON DELETE SET NULL]
+    comments(author_id) → users(id) [ON DELETE CASCADE]
+    projects(owner_id) → users(id)
+  tasks ← 1 reference
+    comments(task_id) → tasks(id) [ON DELETE CASCADE]
+```
+
+**`/erd-find id`** — matching columns with badges:
+
+```
+Found 2 columns matching "id"
+
+  users.id INTEGER PK AUTO
+  tasks.project_id INTEGER FK→ projects.id
+```
+
+**`/erd-about`** — aligned summary stats:
+
+```
+Schema Summary
+
+  Database type        sqlite
+  Tables               4
+  Indexes              6
+  Foreign Keys         5
+  Total columns        28
+  Primary keys         4
+  FK columns           1
+```
+
+## ANSI Helper (`ansi.ts`)
+
+A zero-dependency picocolors-style helper for styling feed lines by name:
+
+```ts
+import {c} from './ansi.ts';
+
+c.bold('Title');            // bold
+c.dim('muted');             // dim
+c.cyan('table');            // named color
+c.green('name');            // ...
+c.brightYellow('warn');     // bright variants
+c.bgRed('alert');           // background
+```
+
+Supported: styles `bold`, `dim`, `italic`, `underline`, `hidden`, `strikethrough`; colors `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `bright*` variants; and `bg*` backgrounds. Colors auto-disable when `NO_COLOR` is set or the stream isn't a TTY, so generated files never contain escape codes.
 
 ## Configuration
 

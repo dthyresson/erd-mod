@@ -1,13 +1,13 @@
-import {c} from './ansi.ts';
+import {t} from './theme.ts';
 
 // Render a markdown string as styled terminal lines.
 //
 // Handles the markdown constructs the ERD mod's query functions emit:
-//   **Bold text**        → bold (a line that is entirely bold is a heading)
+//   **Bold text**        → bold heading (styled with the theme's heading role)
 //   - **bold** item      → bullet list, bold lead, inline code styled
-//   `code`               → cyan
+//   `code`               → code role (cyan by default)
 //   | a | b |            → markdown table; the `|---|` separator row is dropped
-//   > note               → dim blockquote
+//   > note               → muted blockquote
 //
 // Anything unrecognized passes through verbatim. Lines come back without
 // trailing escape codes, so they're safe to print directly.
@@ -16,8 +16,8 @@ const INLINE = /\*\*(.+?)\*\*|`([^`]+)`/g;
 
 function inline(text: string): string {
   return text.replace(INLINE, (m, bold, code) => {
-    if (bold !== undefined) return c.bold(bold);
-    return c.cyan(code);
+    if (bold !== undefined) return t.bold(bold);
+    return t.code(code);
   });
 }
 
@@ -31,7 +31,7 @@ function renderTableRow(line: string): string {
     .replace(/^\||\|$/g, '')
     .split('|')
     .map(cell => inline(cell.trim()));
-  return cells.join('  ' + c.dim('|') + '  ');
+  return cells.join('  ' + t.separator('|') + '  ');
 }
 
 export function renderMarkdown(md: string): string[] {
@@ -54,7 +54,7 @@ export function renderMarkdown(md: string): string[] {
 
     // Blockquote
     if (line.trimStart().startsWith('>')) {
-      out.push(c.dim(line.trimStart().replace(/^>\s?/, '')));
+      out.push(t.muted(line.trimStart().replace(/^>\s?/, '')));
       continue;
     }
 
@@ -62,14 +62,14 @@ export function renderMarkdown(md: string): string[] {
     const bullet = line.match(/^(\s*)-\s+(.*)$/);
     if (bullet) {
       const [, indent, rest] = bullet;
-      out.push(`${indent}${c.dim('•')} ${inline(rest)}`);
+      out.push(`${indent}${t.separator('•')} ${inline(rest)}`);
       continue;
     }
 
     // Headings: `**Text**` or `**Text:**` (all-bold line)
     const heading = line.match(/^\*\*(.+?)\*\*:?$/);
     if (heading) {
-      out.push(c.bold(inline(heading[1])));
+      out.push(t.heading(inline(heading[1])));
       continue;
     }
 

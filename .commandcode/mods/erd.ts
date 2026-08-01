@@ -1,7 +1,8 @@
 import type {ModApi} from '@commandcode/harness';
-import {registerCommands} from './erd/commands.ts';
+import {registerCommands} from './erd/commands/index.ts';
 import {registerTools} from './erd/tools.ts';
 import {registerRenderer} from './erd/renderer.ts';
+import {THEME_NAMES} from './erd/themes/index.ts';
 
 export default function (cmd: ModApi): void {
   cmd.addFlag('erd-format', {
@@ -14,6 +15,12 @@ export default function (cmd: ModApi): void {
     type: 'string',
     default: 'sqlite',
     description: 'Default SQL dialect: sqlite, postgres, mysql, mssql',
+  });
+
+  cmd.addFlag('erd-theme', {
+    type: 'string',
+    default: 'shades-of-purple',
+    description: `Color theme: ${THEME_NAMES.join(', ')}`,
   });
 
   registerCommands(cmd);

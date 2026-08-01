@@ -13,11 +13,34 @@ A Command Code mod that parses SQL schema files and generates Entity-Relationshi
     ├── generators.ts               # ERD output: Mermaid, DBML, ASCII, JSON, PlantUML, Graphviz
     ├── queries.ts                  # listTables, listIndexes, listForeignKeys, findColumn, schemaSummary, describeTable
     ├── helpers.ts                  # Flag parsing, schema path resolution, schema file loading
-    ├── commands.ts                 # All slash command registrations
+    ├── commands/                   # One file per slash command
+    │   ├── index.ts                # Registry: registerCommands() wires all commands
+    │   ├── generate.ts             # /erd-generate
+    │   ├── tables.ts               # /erd-tables
+    │   ├── indexes.ts              # /erd-indexes
+    │   ├── fk.ts                   # /erd-fk
+    │   ├── table.ts                # /erd-table
+    │   ├── find.ts                 # /erd-find
+    │   ├── about.ts                # /erd-about
+    │   └── describe.ts             # /erd-describe
     ├── tools.ts                    # All model-callable tool registrations
     ├── renderer.ts                 # Custom feed renderers for command output
     ├── markdown.ts                 # Markdown → styled feed lines (bold, bullets, inline code, tables)
-    └── ansi.ts                     # Picocolors-style ANSI color/style helpers (zero-dep)
+    ├── theme.ts                    # Theme runtime (setTheme, t.* semantic roles)
+    ├── ansi.ts                     # Picocolors-style ANSI color/style helpers (zero-dep)
+    └── themes/
+        ├── types.ts                # ThemeColors roles + ColorSpec (name | 256 | rgb | hex)
+        ├── config.ts               # DEFAULT_COLORS + DEFAULT_THEME + defineTheme()
+        ├── index.ts                # THEMES registry (name → Theme)
+        ├── default.ts              # Bright cyan/green/yellow palette
+        ├── ocean.ts                # Cool blues and teals
+        ├── forest.ts               # Earthy greens and warm browns
+        ├── sunset.ts               # Warm oranges and pinks
+        ├── mono.ts                 # Monochrome grayscale
+        ├── shades-of-purple.ts     # Violet/lavender on dark navy (default)
+        ├── shades-of-purple-dark.ts # Deep saturated purples on near-black
+        ├── dark.ts                 # Near-black with bright blue accent
+        └── light.ts                # White base with near-black accent
 ```
 
 ## Supported SQL Dialects
@@ -274,9 +297,53 @@ c.cyan('table');            // named color
 c.green('name');            // ...
 c.brightYellow('warn');     // bright variants
 c.bgRed('alert');           // background
+
+c.ansi(196)('hot pink');    // 256-color palette (0–255)
+c.rgb(255, 87, 51)('orange');   // 24-bit true color
+c.hex('#ff5733')('orange');     // hex shorthand (#rgb / #rrggbb)
+
+c.bg.ansi(52)('bg');            // 256-color background
+c.bg.rgb(0, 0, 255)('blue bg'); // true-color background
+c.bg.hex('#0000ff')('blue bg'); // hex background
 ```
 
-Supported: styles `bold`, `dim`, `italic`, `underline`, `hidden`, `strikethrough`; colors `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `bright*` variants; and `bg*` backgrounds. Colors auto-disable when `NO_COLOR` is set or the stream isn't a TTY, so generated files never contain escape codes.
+Supported: styles `bold`, `dim`, `italic`, `underline`, `hidden`, `strikethrough`; colors `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `bright*` variants; and `bg*` backgrounds. Beyond the base 16, `c.ansi(code)` indexes the full 256-color palette and `c.rgb(r, g, b)` / `c.hex('#hex')` emit 24-bit true color (with matching `c.bg.ansi` / `c.bg.rgb` / `c.bg.hex` for backgrounds). `hexToRgb('#hex')` is exported for converting hex to an RGB triple. Values are clamped to 0–255. Colors auto-disable when `NO_COLOR` is set or the stream isn't a TTY, so generated files never contain escape codes.
+
+## Themes
+
+All renderer colors are semantic roles resolved through the active theme:
+
+| Role | Used for |
+|---|---|
+| `accent` | Diagram format header |
+| `table` | Table names / entities |
+| `column` | Column names |
+| `key` | Primary key / UNIQUE badges |
+| `fk` | Foreign key references |
+| `unique` | Unique badges |
+| `muted` | Metadata, counts, dialect |
+| `code` | Inline code |
+| `heading` | Section headings |
+| `title` | Bold titles / values |
+| `separator` | `·` / `|` separators |
+| `dim` | Secondary text |
+| `text` | Plain text |
+
+Built-in themes:
+
+| Theme | Palette |
+|---|---|
+| `shades-of-purple` (default) | Violet/lavender on dark navy |
+| `shades-of-purple-dark` | Deep saturated purples on near-black |
+| `dark` | Near-black with bright blue accent |
+| `light` | White base with near-black accent |
+| `default` | Bright cyan/green/yellow |
+| `ocean` | Cool blues and teals |
+| `forest` | Earthy greens and warm browns |
+| `sunset` | Warm oranges and pinks |
+| `mono` | Monochrome grayscale |
+
+A role color can be a named ANSI color (`'cyan'`), a style (`'dim'`, `'bold'`), a 256-color palette index, an RGB triple, or a hex string (`'#B388FF'`). Themes live in `themes/`; add a new one by creating a file that exports `defineTheme(name, description, colors)` and registering it in `themes/index.ts`.
 
 ## Markdown Renderer (`markdown.ts`)
 
@@ -284,11 +351,12 @@ Supported: styles `bold`, `dim`, `italic`, `underline`, `hidden`, `strikethrough
 
 ## Configuration
 
-Set default format and dialect via mod flags:
+Set default format, dialect, and theme via mod flags:
 
 ```bash
 cmd --mod-option erd-format=ascii
 cmd --mod-option erd-dialect=postgres
+cmd --mod-option erd-theme=ocean
 ```
 
 ## Example Workflow

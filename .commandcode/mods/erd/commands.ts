@@ -71,7 +71,7 @@ ERDEOF`]});
         content: erd,
       });
 
-      return {message: statusParts.join(', ')};
+      cmd.showEntry('erd-markdown', {content: statusParts.join(', ')});
     },
   });
 
@@ -89,7 +89,7 @@ ERDEOF`]});
       const result = await loadAndParse(filePath, cwd, dialect, exec);
       if ('error' in result) return {message: result.error};
 
-      return {message: listTables(result.schema)};
+      cmd.showEntry('erd-markdown', {content: listTables(result.schema)});
     },
   });
 

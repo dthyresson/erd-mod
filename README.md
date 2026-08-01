@@ -16,6 +16,7 @@ A Command Code mod that parses SQL schema files and generates Entity-Relationshi
     ├── commands.ts                 # All slash command registrations
     ├── tools.ts                    # All model-callable tool registrations
     ├── renderer.ts                 # Custom feed renderers for command output
+    ├── markdown.ts                 # Markdown → styled feed lines (bold, bullets, inline code, tables)
     └── ansi.ts                     # Picocolors-style ANSI color/style helpers (zero-dep)
 ```
 
@@ -156,6 +157,7 @@ Command output renders through custom feed entries (registered with `cmd.addRend
 | Indexes | `erd-indexes` | `/erd-indexes` | Colored index list with UNIQUE badges |
 | Columns | `erd-columns` | `/erd-find` | Matching columns with PK/FK/UQ badges |
 | Table | `erd-table` | `/erd-table` | Full table detail (columns, indexes, FKs) |
+| Markdown | `erd-markdown` | `/erd-tables`, `/erd-generate` (status) | Markdown → styled feed lines (bold, bullets, inline code, tables) |
 
 An unregistered custom type would pretty-print as JSON; renderers are line-based and styled with ANSI escapes. Headless (`-p`) runs drop feed entries.
 
@@ -275,6 +277,10 @@ c.bgRed('alert');           // background
 ```
 
 Supported: styles `bold`, `dim`, `italic`, `underline`, `hidden`, `strikethrough`; colors `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `bright*` variants; and `bg*` backgrounds. Colors auto-disable when `NO_COLOR` is set or the stream isn't a TTY, so generated files never contain escape codes.
+
+## Markdown Renderer (`markdown.ts`)
+
+`renderMarkdown(md)` converts a markdown string into styled terminal lines. It handles the constructs the query functions emit: `**bold**` headings, `- ` bullet lists, `` `inline code` `` (cyan), markdown pipe tables (separator row dropped), and `> ` blockquotes (dim). Unknown lines pass through verbatim. Registered as the `erd-markdown` feed entry and used by `/erd-tables` and the `/erd-generate` status row.
 
 ## Configuration
 

@@ -1,6 +1,7 @@
 import type {ModApi} from '@commandcode/harness';
 import type {Column, ForeignKey, Index} from './types.ts';
 import {c} from './ansi.ts';
+import {renderMarkdown} from './markdown.ts';
 
 const SEP = c.dim('·');
 
@@ -22,6 +23,12 @@ function indexBadge(idx: Index): string {
 // ── renderers ────────────────────────────────────────────────────────────────
 
 export function registerRenderer(cmd: ModApi): void {
+  // Any markdown string (from queries.ts) rendered as styled feed lines
+  cmd.addRenderer('erd-markdown', (data) => {
+    const d = data as {content: string};
+    return renderMarkdown(d.content);
+  });
+
   // /erd-generate — a generated ERD diagram
   cmd.addRenderer('erd-diagram', (data) => {
     const d = data as {
